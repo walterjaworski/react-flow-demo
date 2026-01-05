@@ -1,59 +1,38 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom';
 
-const linkStyle = {
-  textDecoration: 'none',
-  padding: '8px 12px',
-  borderRadius: 6,
+const CustomNavLink = ({ to, children }: { to: string; children: React.ReactNode }) => {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) => `
+        px-3 py-2 rounded-md text-sm font-medium transition-colors
+        text-slate-900
+        hover:bg-slate-200
+        ${isActive ? 'bg-slate-200' : 'bg-transparent'}
+      `}
+    >
+      {children}
+    </NavLink>
+  )
 }
 
 export default function Header() {
   return (
-    <header
-      style={{
-        height: 56,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: '0 16px',
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
-      }}
-    >
+    <header className="flex items-center gap-4 px-4 bg-white border-b border-gray-200">
       <strong>React Flow Demo</strong>
 
-      <nav style={{ display: 'flex', gap: 8 }}>
-        <NavLink
-          to="/"
-          style={({ isActive }) => ({
-            ...linkStyle,
-            backgroundColor: isActive ? '#e2e8f0' : 'transparent',
-            color: '#0f172a',
-          })}
-        >
+      <nav className="flex gap-2">
+        <CustomNavLink to="/">
           Home
-        </NavLink>
+        </CustomNavLink>
 
-        <NavLink
-          to="/custom"
-          style={({ isActive }) => ({
-            ...linkStyle,
-            backgroundColor: isActive ? '#e2e8f0' : 'transparent',
-            color: '#0f172a',
-          })}
-        >
+        <CustomNavLink to="/custom">
           Custom
-        </NavLink>
+        </CustomNavLink>
 
-        <NavLink
-          to="/about"
-          style={({ isActive }) => ({
-            ...linkStyle,
-            backgroundColor: isActive ? '#e2e8f0' : 'transparent',
-            color: '#0f172a',
-          })}
-        >
+        <CustomNavLink to="/about">
           About
-        </NavLink>
+        </CustomNavLink>
       </nav>
     </header>
   )
