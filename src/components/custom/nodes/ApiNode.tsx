@@ -30,12 +30,13 @@ export default function ApiNode({ id, onRequestNewNode }: ApiNodeProps) {
 
   return (
     <NodeContainer id={id}>
-      <div className="p-2 border-2 border-blue-600 rounded bg-blue-100">
+      <div className="p-2 border-2 border-blue-600 rounded bg-blue-100 relative">
         API Node
         <Handle
           type="target"
           position={Position.Left}
           id={`${id}-in`}
+          className="absolute"
         />
       </div>
       <div className="flex-1 text-sm flex flex-col justify-around">
@@ -63,6 +64,9 @@ export default function ApiNode({ id, onRequestNewNode }: ApiNodeProps) {
                   size="icon-sm"
                   variant="ghost"
                   className="absolute top-[50%] right-[-12%] translate-y-[-50%]"
+                  onClick={() =>
+                    onRequestNewNode(id, `${id}-out-${output.case}`)
+                  }
                 >
                   <CirclePlusIcon className="bg-white" />
                 </Button>

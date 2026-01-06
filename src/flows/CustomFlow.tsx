@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import ApiNode from "../components/custom/nodes/ApiNode";
-import BalanceNode from "../components/custom/nodes/BalanceNode";
 import FinalFailedNode from "../components/custom/nodes/FinalFailedNode";
 import FinalSuccessNode from "../components/custom/nodes/FinalSuccessNode";
 import InitialNode from "../components/custom/nodes/InitialNode";
@@ -19,28 +18,23 @@ import { RadioGroupItem } from "../components/ui/radio-group";
 import { Textarea } from "../components/ui/textarea";
 import { cn } from "../lib/utils";
 
-const initialNode = {
-  id: 'start-node',
-  position: { x: 25, y: 25 },
-  type: 'initialNode',
-  data: { label: '', bgClass: '' },
-};
+const NODE_HEIGHT_DEFAULT = 150;
+const HORIZONTAL_GAP = 300;
+const VERTICAL_GAP = 20;
 
 const colors = ["bg-blue-200", "bg-green-200", "bg-red-200"];
 
+const edgeColorByCase: Record<string, string> = {
+  success: "#22C55E",
+  deny: "#EAB308",
+  fail: "#EF4444",
+};
+
 const nodeTypesOptions = [
   { label: 'API Node', value: 'apiNode' },
-  { label: 'Balance Node', value: 'balanceNode' },
   { label: 'Final Success Node', value: 'finalSuccessNode' },
   { label: 'Final Failed Node', value: 'finalFailedNode' },
 ];
-
-const OriginalNodes = [
-  { id: '1', position: { x: 0, y: 0 }, data: { label: 'Start' } },
-  { id: '2', position: { x: 200, y: 100 }, data: { label: 'End' } },
-];
-
-const OriginalEdges = [{ id: 'e1-2', source: '1', target: '2' }];
 
 const initialNodeFormSchema = z.object({
   label: z.string().min(2, {
@@ -88,6 +82,11 @@ export default function CustomFlow() {
     },
   });
 
+  function getCaseFromHandleId(handleId?: string) {
+    if (!handleId) return null;
+    return handleId.split("-").pop();
+  }
+
   function onSubmitInitialNode(values: z.infer<typeof initialNodeFormSchema>) {
     const newInitialNode: Node = {
       id: 'start-node',
@@ -120,18 +119,30 @@ export default function CustomFlow() {
     const newNodes = [...nodes, newNode];
     setNodes(newNodes);
 
-    if (sourceNodeId) {
-      const handleType = sourceHandleId?.split('-').pop() ?? '';
+    if (sourceNodeId && sourceHandleId) {
+      const caseType = getCaseFromHandleId(sourceHandleId);
+
+      const edgeColor =
+        (caseType && edgeColorByCase[caseType]) ?? "#64748B";
+
       const newEdge: Edge = {
         id: `${sourceHandleId}-${id}`,
         source: sourceNodeId,
-        sourceHandle: sourceHandleId ?? undefined,
+        sourceHandle: sourceHandleId,
         target: id,
-        type: 'bezier',
-        style: { stroke: handleType === 'out' ? 'green' : 'red', strokeWidth: 2 },
-      }
+        type: "default",
+        style: {
+          stroke: edgeColor,
+          strokeWidth: 2,
+        },
+      };
+
       const newEdges = [...edges, newEdge];
       setEdges(newEdges);
+
+      applyTreeLayout(newNodes, newEdges, setNodes);
+    } else {
+      applyTreeLayout(newNodes, edges, setNodes);
     }
 
     setSourceNodeId(null);
@@ -145,7 +156,93 @@ export default function CustomFlow() {
     setNodes([]);
   }
 
+  function applyTreeLayout(
+    nodes: Node[],
+    edges: Edge[],
+    setNodes: (updater: (prev: Node[]) => Node[]) => void
+  ) {
+    const NODE_HEIGHTS: Record<string, number> = {
+      initialNode: 200,
+      apiNode: 150,
+      finalNode: 120,
+    };
+
+    const startX = 50;
+    const startY = 50;
+
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+
+    const childrenMap: Record<string, string[]> = {};
+    edges.forEach(edge => {
+      if (!childrenMap[edge.source]) childrenMap[edge.source] = [];
+      childrenMap[edge.source].push(edge.target);
+    });
+
+    const allTargets = new Set(edges.map(e => e.target));
+    const root = nodes.find(n => n.id === 'start-node') || nodes.find(n => !allTargets.has(n.id));
+    if (!root) return;
+
+    function getSubtreeHeight(nodeId: string): number {
+      const node = nodeMap.get(nodeId);
+      const nodeType = node?.type ?? 'apiNode';
+      const ownHeight = (node?.height ?? NODE_HEIGHTS[nodeType]) ?? NODE_HEIGHT_DEFAULT;
+
+      const children = childrenMap[nodeId] || [];
+      if (children.length === 0) return ownHeight;
+
+      const childrenHeights = children.map(childId => getSubtreeHeight(childId));
+      const totalChildren = childrenHeights.reduce((a, b) => a + b, 0) + VERTICAL_GAP * (children.length - 1);
+
+      return Math.max(ownHeight, totalChildren);
+    }
+
+    const positions = new Map<string, { x: number; y: number }>();
+
+    function layoutTree(nodeId: string, x: number, y: number) {
+      const node = nodeMap.get(nodeId);
+      const nodeType = node?.type ?? 'apiNode';
+      const nodeHeight = (node?.height ?? NODE_HEIGHTS[nodeType]) ?? NODE_HEIGHT_DEFAULT;
+
+      const subtreeHeight = getSubtreeHeight(nodeId);
+
+      const nodeY = y + subtreeHeight / 2 - nodeHeight / 2;
+      positions.set(nodeId, { x, y: nodeY });
+
+      const children = childrenMap[nodeId] || [];
+      if (children.length === 0) return;
+
+      const childrenHeights = children.map(child => getSubtreeHeight(child));
+      const totalChildrenHeight = childrenHeights.reduce((a, b) => a + b, 0) + VERTICAL_GAP * (children.length - 1);
+
+      let currentY = y + subtreeHeight / 2 - totalChildrenHeight / 2;
+      for (let i = 0; i < children.length; i++) {
+        const childId = children[i];
+        const childHeight = childrenHeights[i];
+        layoutTree(childId, x + HORIZONTAL_GAP, currentY);
+        currentY += childHeight + VERTICAL_GAP;
+      }
+    }
+
+    layoutTree(root.id, startX, startY);
+
+    let hasChange = false;
+    const updated = nodes.map(n => {
+      const p = positions.get(n.id);
+      if (!p) return n;
+      if (n.position.x !== p.x || n.position.y !== p.y) {
+        hasChange = true;
+        return { ...n, position: { x: p.x, y: p.y } };
+      }
+      return n;
+    });
+
+    if (hasChange) {
+      setNodes(() => updated);
+    }
+  };
+
   const handleRequestNewNodeFromSource = useCallback((sourceId: string, handleId: string) => {
+    console.log('Requesting new node from source:', sourceId, handleId);
     setSourceNodeId(sourceId);
     setSourceHandleId(handleId);
     setDialogNewIsOpen(true);
@@ -153,8 +250,7 @@ export default function CustomFlow() {
 
   const nodeTypes = useMemo(() => ({
     initialNode: (nodeProps: any) => <InitialNode {...nodeProps} onRequestNewNode={handleRequestNewNodeFromSource} />,
-    apiNode: (nodeProps: any) => <ApiNode {...nodeProps} />,
-    balanceNode: (nodeProps: any) => <BalanceNode {...nodeProps} />,
+    apiNode: (nodeProps: any) => <ApiNode {...nodeProps} onRequestNewNode={handleRequestNewNodeFromSource} />,
     finalSuccessNode: (nodeProps: any) => <FinalSuccessNode {...nodeProps} />,
     finalFailedNode: (nodeProps: any) => <FinalFailedNode {...nodeProps} />,
   }), []);
@@ -237,7 +333,7 @@ export default function CustomFlow() {
                     </FormItem>
                   )}
                 />
-                <DialogFooter>
+                <DialogFooter className="mt-4">
                   <Button type="submit">Adicionar</Button>
                   <DialogClose asChild>
                     <Button type="button" variant="secondary">
@@ -253,12 +349,12 @@ export default function CustomFlow() {
       </div>
       <div style={{ width: '100%', height: '500px' }}>
         <ReactFlow
-          // nodes={OriginalNodes}
           nodes={nodes}
-          // edges={OriginalEdges}
           edges={edges}
           nodeTypes={nodeTypes}
-        // fitView
+          nodesConnectable={false}
+          nodesDraggable
+          elementsSelectable
         >
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           <Controls />
@@ -300,7 +396,7 @@ export default function CustomFlow() {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
+              <DialogFooter className="mt-4">
                 <Button type="submit">Adicionar</Button>
                 <DialogClose asChild>
                   <Button type="button" variant="secondary">
