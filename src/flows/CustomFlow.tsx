@@ -2,20 +2,17 @@ import { InitialNodeDialog } from "@/components/flow/dialogs/InitialNodeDialog";
 import { NewNodeDialog } from "@/components/flow/dialogs/NewNodeDIalog";
 import { InitialNodeForm, InitialNodeFormValues } from "@/components/flow/forms/InitialNodeForm";
 import { NewNodeForm, NewNodeFormValues } from "@/components/flow/forms/NewNodeForm";
+import { applyTreeLayout } from "@/components/flow/layout/applyTreeLayout";
 import ApiNode from "@/components/flow/nodes/ApiNode";
 import FinalFailedNode from "@/components/flow/nodes/FinalFailedNode";
 import FinalSuccessNode from "@/components/flow/nodes/FinalSuccessNode";
 import InitialNode from "@/components/flow/nodes/InitialNode";
 import { zodResolver } from "@hookform/resolvers/zod/src/index.js";
 import { Background, BackgroundVariant, Controls, ReactFlow, type Edge, type Node } from "@xyflow/react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { Button } from "../components/ui/button";
-
-const NODE_HEIGHT_DEFAULT = 150;
-const HORIZONTAL_GAP = 300;
-const VERTICAL_GAP = 20;
 
 const colors = ["bg-blue-200", "bg-green-200", "bg-red-200"];
 
@@ -176,91 +173,6 @@ export default function CustomFlow() {
     setNodes([]);
   }
 
-  function applyTreeLayout(
-    nodes: Node[],
-    edges: Edge[],
-    setNodes: (updater: (prev: Node[]) => Node[]) => void
-  ) {
-    const NODE_HEIGHTS: Record<string, number> = {
-      initialNode: 200,
-      apiNode: 150,
-      finalNode: 120,
-    };
-
-    const startX = 50;
-    const startY = 50;
-
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
-
-    const childrenMap: Record<string, string[]> = {};
-    edges.forEach(edge => {
-      if (!childrenMap[edge.source]) childrenMap[edge.source] = [];
-      childrenMap[edge.source].push(edge.target);
-    });
-
-    const allTargets = new Set(edges.map(e => e.target));
-    const root = nodes.find(n => n.id === 'start-node') || nodes.find(n => !allTargets.has(n.id));
-    if (!root) return;
-
-    function getSubtreeHeight(nodeId: string): number {
-      const node = nodeMap.get(nodeId);
-      const nodeType = node?.type ?? 'apiNode';
-      const ownHeight = (node?.height ?? NODE_HEIGHTS[nodeType]) ?? NODE_HEIGHT_DEFAULT;
-
-      const children = childrenMap[nodeId] || [];
-      if (children.length === 0) return ownHeight;
-
-      const childrenHeights = children.map(childId => getSubtreeHeight(childId));
-      const totalChildren = childrenHeights.reduce((a, b) => a + b, 0) + VERTICAL_GAP * (children.length - 1);
-
-      return Math.max(ownHeight, totalChildren);
-    }
-
-    const positions = new Map<string, { x: number; y: number }>();
-
-    function layoutTree(nodeId: string, x: number, y: number) {
-      const node = nodeMap.get(nodeId);
-      const nodeType = node?.type ?? 'apiNode';
-      const nodeHeight = (node?.height ?? NODE_HEIGHTS[nodeType]) ?? NODE_HEIGHT_DEFAULT;
-
-      const subtreeHeight = getSubtreeHeight(nodeId);
-
-      const nodeY = y + subtreeHeight / 2 - nodeHeight / 2;
-      positions.set(nodeId, { x, y: nodeY });
-
-      const children = childrenMap[nodeId] || [];
-      if (children.length === 0) return;
-
-      const childrenHeights = children.map(child => getSubtreeHeight(child));
-      const totalChildrenHeight = childrenHeights.reduce((a, b) => a + b, 0) + VERTICAL_GAP * (children.length - 1);
-
-      let currentY = y + subtreeHeight / 2 - totalChildrenHeight / 2;
-      for (let i = 0; i < children.length; i++) {
-        const childId = children[i];
-        const childHeight = childrenHeights[i];
-        layoutTree(childId, x + HORIZONTAL_GAP, currentY);
-        currentY += childHeight + VERTICAL_GAP;
-      }
-    }
-
-    layoutTree(root.id, startX, startY);
-
-    let hasChange = false;
-    const updated = nodes.map(n => {
-      const p = positions.get(n.id);
-      if (!p) return n;
-      if (n.position.x !== p.x || n.position.y !== p.y) {
-        hasChange = true;
-        return { ...n, position: { x: p.x, y: p.y } };
-      }
-      return n;
-    });
-
-    if (hasChange) {
-      setNodes(() => updated);
-    }
-  };
-
   const handleRequestNewNodeFromSource = useCallback((sourceId: string, handleId: string) => {
     console.log('Requesting new node from source:', sourceId, handleId);
     setSourceNodeId(sourceId);
@@ -274,6 +186,10 @@ export default function CustomFlow() {
     finalSuccessNode: (nodeProps: any) => <FinalSuccessNode {...nodeProps} />,
     finalFailedNode: (nodeProps: any) => <FinalFailedNode {...nodeProps} />,
   }), []);
+
+  useEffect(() => {
+    setNodes((prev) => applyTreeLayout(prev, edges));
+  }, [edges]);
 
   return (
     <>
