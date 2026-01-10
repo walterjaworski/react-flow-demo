@@ -1,22 +1,15 @@
+import { InitialNodeDialog } from "@/components/flow/dialogs/InitialNodeDialog";
+import { NewNodeDialog } from "@/components/flow/dialogs/NewNodeDIalog";
+import ApiNode from "@/components/flow/nodes/ApiNode";
+import FinalFailedNode from "@/components/flow/nodes/FinalFailedNode";
+import FinalSuccessNode from "@/components/flow/nodes/FinalSuccessNode";
+import InitialNode from "@/components/flow/nodes/InitialNode";
 import { zodResolver } from "@hookform/resolvers/zod/src/index.js";
-import { RadioGroup } from "@radix-ui/react-radio-group";
 import { Background, BackgroundVariant, Controls, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
-import ApiNode from "../components/custom/nodes/ApiNode";
-import FinalFailedNode from "../components/custom/nodes/FinalFailedNode";
-import FinalSuccessNode from "../components/custom/nodes/FinalSuccessNode";
-import InitialNode from "../components/custom/nodes/InitialNode";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { RadioGroupItem } from "../components/ui/radio-group";
-import { Textarea } from "../components/ui/textarea";
-import { cn } from "../lib/utils";
 
 const NODE_HEIGHT_DEFAULT = 150;
 const HORIZONTAL_GAP = 300;
@@ -258,7 +251,7 @@ export default function CustomFlow() {
   return (
     <>
       <div className="flex gap-2 mb-4">
-        <Dialog
+        {/* <Dialog
           open={dialogInitialNodeIsOpen}
           onOpenChange={(isOpen) => {
             setDialogInitialNodeIsOpen(isOpen);
@@ -344,7 +337,10 @@ export default function CustomFlow() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
+        <Button onClick={() => setDialogInitialNodeIsOpen(true)}>
+          Inserir node inicial
+        </Button>
         <Button variant="ghost" className="ml-auto" onClick={() => CleanFlow()}>Limpar flow</Button>
       </div>
       <div style={{ width: '100%', height: '500px' }}>
@@ -361,7 +357,23 @@ export default function CustomFlow() {
         </ReactFlow>
       </div>
 
-      <Dialog open={dialogNewIsOpen} onOpenChange={() => setDialogNewIsOpen(false)}>
+      <InitialNodeDialog
+        open={dialogInitialNodeIsOpen}
+        onOpenChange={setDialogInitialNodeIsOpen}
+      >
+        alguma coisa
+      </InitialNodeDialog>
+
+      <NewNodeDialog
+        open={dialogNewIsOpen}
+        onOpenChange={setDialogNewIsOpen}
+        sourceNodeId={sourceNodeId}
+        sourceHandleId={sourceHandleId}
+      >
+        alguma coisa
+      </NewNodeDialog>
+
+      {/* <Dialog open={dialogNewIsOpen} onOpenChange={() => setDialogNewIsOpen(false)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adicionar novo node</DialogTitle>
@@ -407,7 +419,7 @@ export default function CustomFlow() {
             </form>
           </Form>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </>
   );
 }
