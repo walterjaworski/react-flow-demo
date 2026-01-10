@@ -1,5 +1,7 @@
 import { InitialNodeDialog } from "@/components/flow/dialogs/InitialNodeDialog";
 import { NewNodeDialog } from "@/components/flow/dialogs/NewNodeDIalog";
+import { InitialNodeForm, InitialNodeFormValues } from "@/components/flow/forms/InitialNodeForm";
+import { NewNodeForm, NewNodeFormValues } from "@/components/flow/forms/NewNodeForm";
 import ApiNode from "@/components/flow/nodes/ApiNode";
 import FinalFailedNode from "@/components/flow/nodes/FinalFailedNode";
 import FinalSuccessNode from "@/components/flow/nodes/FinalSuccessNode";
@@ -80,69 +82,94 @@ export default function CustomFlow() {
     return handleId.split("-").pop();
   }
 
-  function onSubmitInitialNode(values: z.infer<typeof initialNodeFormSchema>) {
-    const newInitialNode: Node = {
-      id: 'start-node',
-      position: { x: 25, y: 25 },
-      type: 'initialNode',
+  function handleCreateInitialNode(
+    values: InitialNodeFormValues
+  ) {
+    const initialNode: Node = {
+      id: "start-node",
+      type: "initialNode",
+      position: { x: 50, y: 50 },
       data: {
         label: values.label,
         description: values.description,
         bgClass: values.bgClass,
       },
     };
-    setNodes([newInitialNode]);
-    setDialogInitialNodeIsOpen(false);
-    initialNodeForm.reset();
+
+    setNodes([initialNode]);
   }
 
-  function onSubmitNewNode(values: z.infer<typeof newNodeFormSchema>) {
+  function handleCreateNewNode(
+    values: NewNodeFormValues
+  ) {
     const id = crypto.randomUUID().slice(0, 8);
-    const baseNode = sourceNodeId ? nodes.find(n => n.id === sourceNodeId) : nodes[nodes.length - 1];
-    const baseX = baseNode?.position.x ?? 100;
-    const baseY = baseNode?.position.y ?? 100;
+
+    const baseNode =
+      sourceNodeId
+        ? nodes.find((n) => n.id === sourceNodeId)
+        : nodes[nodes.length - 1];
+
+    if (!baseNode) return;
+
+    const position = {
+      x: baseNode.position.x + 200,
+      y: baseNode.position.y,
+    };
 
     const newNode: Node = {
       id,
-      position: { x: baseX + 200, y: baseY },
       type: values.nodeType,
+      position,
       data: {},
     };
 
-    const newNodes = [...nodes, newNode];
-    setNodes(newNodes);
+    const updatedNodes = [...nodes, newNode];
+    setNodes(updatedNodes);
 
     if (sourceNodeId && sourceHandleId) {
-      const caseType = getCaseFromHandleId(sourceHandleId);
+      const newEdge = createEdge({
+        sourceNodeId,
+        sourceHandleId,
+        targetNodeId: id,
+      });
 
-      const edgeColor =
-        (caseType && edgeColorByCase[caseType]) ?? "#64748B";
-
-      const newEdge: Edge = {
-        id: `${sourceHandleId}-${id}`,
-        source: sourceNodeId,
-        sourceHandle: sourceHandleId,
-        target: id,
-        type: "default",
-        style: {
-          stroke: edgeColor,
-          strokeWidth: 2,
-        },
-      };
-
-      const newEdges = [...edges, newEdge];
-      setEdges(newEdges);
-
-      applyTreeLayout(newNodes, newEdges, setNodes);
-    } else {
-      applyTreeLayout(newNodes, edges, setNodes);
+      setEdges((prev) => [...prev, newEdge]);
     }
 
+    resetNewNodeFlow();
+  }
+
+  function createEdge({
+    sourceNodeId,
+    sourceHandleId,
+    targetNodeId,
+  }: {
+    sourceNodeId: string;
+    sourceHandleId: string;
+    targetNodeId: string;
+  }): Edge {
+    const caseType = getCaseFromHandleId(sourceHandleId);
+
+    return {
+      id: `${sourceHandleId}-${targetNodeId}`,
+      source: sourceNodeId,
+      sourceHandle: sourceHandleId,
+      target: targetNodeId,
+      type: "default",
+      style: {
+        stroke:
+          (caseType && edgeColorByCase[caseType]) ?? "#64748B",
+        strokeWidth: 2,
+      },
+    };
+  }
+
+  function resetNewNodeFlow() {
     setSourceNodeId(null);
     setSourceHandleId(null);
     setDialogNewIsOpen(false);
-    newNodeForm.reset();
-  };
+  }
+
 
   function CleanFlow() {
     setEdges([]);
@@ -251,96 +278,7 @@ export default function CustomFlow() {
   return (
     <>
       <div className="flex gap-2 mb-4">
-        {/* <Dialog
-          open={dialogInitialNodeIsOpen}
-          onOpenChange={(isOpen) => {
-            setDialogInitialNodeIsOpen(isOpen);
-            if (!isOpen) {
-              initialNodeForm.reset();
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button disabled={hasInitialNode}>Inserir node inicial</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Inserir Node Inicial</DialogTitle>
-              <DialogDescription>
-                Customize o node inicial do seu flow aqui.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...initialNodeForm}>
-              <form onSubmit={initialNodeForm.handleSubmit(onSubmitInitialNode)} className="space-y-8">
-                <FormField
-                  control={initialNodeForm.control}
-                  name="bgClass"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cor de fundo</FormLabel>
-                      <FormControl>
-                        <RadioGroup defaultValue={colors[0]} onValueChange={field.onChange} className="flex gap-4" {...field}>
-                          {colors.map((color) => (
-                            <div key={color}>
-                              <RadioGroupItem value={color} id={color} className="sr-only" />
-
-                              <Label
-                                htmlFor={color}
-                                className={cn(
-                                  "w-6 h-6 rounded-full cursor-pointer ring-2 transition",
-                                  color,
-                                  field.value === color ? "ring-black" : "ring-transparent"
-                                )}
-                              />
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={initialNodeForm.control}
-                  name="label"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Label</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite seu Label aqui." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={initialNodeForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Digite sua descrição aqui." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter className="mt-4">
-                  <Button type="submit">Adicionar</Button>
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                      Cancelar
-                    </Button>
-                  </DialogClose>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog> */}
-        <Button onClick={() => setDialogInitialNodeIsOpen(true)}>
-          Inserir node inicial
-        </Button>
+        <Button onClick={() => setDialogInitialNodeIsOpen(true)}>Inserir node inicial</Button>
         <Button variant="ghost" className="ml-auto" onClick={() => CleanFlow()}>Limpar flow</Button>
       </div>
       <div style={{ width: '100%', height: '500px' }}>
@@ -361,7 +299,12 @@ export default function CustomFlow() {
         open={dialogInitialNodeIsOpen}
         onOpenChange={setDialogInitialNodeIsOpen}
       >
-        alguma coisa
+        <InitialNodeForm
+          onSubmit={(values) => {
+            handleCreateInitialNode(values);
+            setDialogInitialNodeIsOpen(false);
+          }}
+        />
       </InitialNodeDialog>
 
       <NewNodeDialog
@@ -370,56 +313,13 @@ export default function CustomFlow() {
         sourceNodeId={sourceNodeId}
         sourceHandleId={sourceHandleId}
       >
-        alguma coisa
+        <NewNodeForm
+          onSubmit={(values) => {
+            handleCreateNewNode(values);
+            setDialogNewIsOpen(false);
+          }}
+        />
       </NewNodeDialog>
-
-      {/* <Dialog open={dialogNewIsOpen} onOpenChange={() => setDialogNewIsOpen(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar novo node</DialogTitle>
-            <DialogDescription>
-              Adicionar um novo node conectado ao node <strong>{sourceNodeId}</strong> pelo handle <strong>{sourceHandleId}</strong>
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...newNodeForm}>
-            <form onSubmit={newNodeForm.handleSubmit(onSubmitNewNode)}>
-              <FormField
-                control={newNodeForm.control}
-                name="nodeType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo</FormLabel>
-                    <FormControl>
-                      <RadioGroup defaultValue="" onValueChange={field.onChange} className="flex flex-wrap gap-2" {...field}>
-                        {nodeTypesOptions.map((option) => (
-                          <Badge key={option.value} className={cn("flex items-center gap-2", newNodeForm.getValues("nodeType") === option.value ? "bg-black text-white" : "bg-gray-200 text-gray-800")}>
-                            <RadioGroupItem value={option.value} id={option.value} className="sr-only" />
-                            <Label
-                              htmlFor={option.value}
-                              className="p-2"
-                            >
-                              {option.label}
-                            </Label>
-                          </Badge>
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter className="mt-4">
-                <Button type="submit">Adicionar</Button>
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog> */}
     </>
   );
 }
