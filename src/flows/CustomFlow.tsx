@@ -1,50 +1,18 @@
 import { InitialNodeDialog } from "@/components/flow/dialogs/InitialNodeDialog";
 import { NewNodeDialog } from "@/components/flow/dialogs/NewNodeDIalog";
-import { InitialNodeForm, InitialNodeFormValues } from "@/components/flow/forms/InitialNodeForm";
-import { NewNodeForm, NewNodeFormValues } from "@/components/flow/forms/NewNodeForm";
+import type { InitialNodeFormValues } from "@/components/flow/forms/InitialNodeForm";
+import { InitialNodeForm } from "@/components/flow/forms/InitialNodeForm";
+import type { NewNodeFormValues } from "@/components/flow/forms/NewNodeForm";
+import { NewNodeForm } from "@/components/flow/forms/NewNodeForm";
 import { applyTreeLayout } from "@/components/flow/layout/applyTreeLayout";
 import ApiNode from "@/components/flow/nodes/ApiNode";
 import FinalFailedNode from "@/components/flow/nodes/FinalFailedNode";
 import FinalSuccessNode from "@/components/flow/nodes/FinalSuccessNode";
 import InitialNode from "@/components/flow/nodes/InitialNode";
-import { zodResolver } from "@hookform/resolvers/zod/src/index.js";
+import { createEdge } from "@/components/flow/utils/edges";
 import { Background, BackgroundVariant, Controls, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import z from "zod";
 import { Button } from "../components/ui/button";
-
-const colors = ["bg-blue-200", "bg-green-200", "bg-red-200"];
-
-const edgeColorByCase: Record<string, string> = {
-  success: "#22C55E",
-  deny: "#EAB308",
-  fail: "#EF4444",
-};
-
-const nodeTypesOptions = [
-  { label: 'API Node', value: 'apiNode' },
-  { label: 'Final Success Node', value: 'finalSuccessNode' },
-  { label: 'Final Failed Node', value: 'finalFailedNode' },
-];
-
-const initialNodeFormSchema = z.object({
-  label: z.string().min(2, {
-    message: "Label deve conter ao menos 2 caracteres.",
-  }).max(20, {
-    message: "Label deve conter no máximo 20 caracteres.",
-  }),
-  description: z.string().min(2, {
-    message: "Descrição deve conter ao menos 2 caracteres.",
-  }).max(20, {
-    message: "Descrição deve conter no máximo 20 caracteres.",
-  }),
-  bgClass: z.string(),
-});
-
-const newNodeFormSchema = z.object({
-  nodeType: z.string(),
-});
 
 export default function CustomFlow() {
   const [dialogInitialNodeIsOpen, setDialogInitialNodeIsOpen] = useState(false);
@@ -53,31 +21,6 @@ export default function CustomFlow() {
   const [sourceHandleId, setSourceHandleId] = useState<string | null>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-
-  const hasInitialNode = useMemo(() => {
-    return nodes.some((node) => node.type === 'initialNode');
-  }, [nodes]);
-
-  const initialNodeForm = useForm<z.infer<typeof initialNodeFormSchema>>({
-    resolver: zodResolver(initialNodeFormSchema),
-    defaultValues: {
-      label: "",
-      description: "",
-      bgClass: colors[0],
-    },
-  });
-
-  const newNodeForm = useForm<z.infer<typeof newNodeFormSchema>>({
-    resolver: zodResolver(newNodeFormSchema),
-    defaultValues: {
-      nodeType: nodeTypesOptions[0].value,
-    },
-  });
-
-  function getCaseFromHandleId(handleId?: string) {
-    if (!handleId) return null;
-    return handleId.split("-").pop();
-  }
 
   function handleCreateInitialNode(
     values: InitialNodeFormValues
@@ -136,37 +79,11 @@ export default function CustomFlow() {
     resetNewNodeFlow();
   }
 
-  function createEdge({
-    sourceNodeId,
-    sourceHandleId,
-    targetNodeId,
-  }: {
-    sourceNodeId: string;
-    sourceHandleId: string;
-    targetNodeId: string;
-  }): Edge {
-    const caseType = getCaseFromHandleId(sourceHandleId);
-
-    return {
-      id: `${sourceHandleId}-${targetNodeId}`,
-      source: sourceNodeId,
-      sourceHandle: sourceHandleId,
-      target: targetNodeId,
-      type: "default",
-      style: {
-        stroke:
-          (caseType && edgeColorByCase[caseType]) ?? "#64748B",
-        strokeWidth: 2,
-      },
-    };
-  }
-
   function resetNewNodeFlow() {
     setSourceNodeId(null);
     setSourceHandleId(null);
     setDialogNewIsOpen(false);
   }
-
 
   function CleanFlow() {
     setEdges([]);
