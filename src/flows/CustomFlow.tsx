@@ -69,16 +69,16 @@ export default function CustomFlow() {
       setEdges((prev) => [...prev, newEdge]);
     }
 
-    resetNewNodeFlow();
+    resetNewNodeCreationState();
   }
 
-  function resetNewNodeFlow() {
+  function resetNewNodeCreationState() {
     setSourceNodeId(null);
     setSourceHandleId(null);
     setDialogNewIsOpen(false);
   }
 
-  function CleanFlow() {
+  function cleanFlow() {
     setEdges([]);
     setNodes([]);
   }
@@ -98,14 +98,14 @@ export default function CustomFlow() {
   }), []);
 
   useEffect(() => {
-    setNodes((prev) => applyTreeLayout(prev, edges));
+    setNodes((nodes) => applyTreeLayout(nodes, edges));
   }, [edges]);
 
   return (
     <>
       <div className="flex gap-2 mb-4">
         <Button onClick={() => setDialogInitialNodeIsOpen(true)}>Inserir node inicial</Button>
-        <Button variant="ghost" className="ml-auto" onClick={() => CleanFlow()}>Limpar flow</Button>
+        <Button variant="ghost" className="ml-auto" onClick={() => cleanFlow()}>Limpar flow</Button>
       </div>
       <div style={{ width: '100%', height: '500px' }}>
         <ReactFlow
