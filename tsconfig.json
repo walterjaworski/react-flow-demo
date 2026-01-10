@@ -15,6 +15,7 @@
         "src/*"
       ]
     },
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "forceConsistentCasingInFileNames": true
   }
 }
