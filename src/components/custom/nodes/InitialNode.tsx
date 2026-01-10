@@ -1,27 +1,18 @@
+import { INodeProps } from "@/types/nodes";
 import { Handle, Position } from "@xyflow/react";
 import { Button } from "../../ui/button";
 import NodeContainer from "./NodeContainer";
 
-interface InitialNodeProps {
-  id: string;
-  data: {
-    label: string;
-    description: string;
-    bgClass: string;
-  };
-  onRequestNewNode: (sourceId: string, handleId: string) => void;
-}
-
-export default function InitialNode({ id, data, onRequestNewNode }: InitialNodeProps) {
+export default function InitialNode({ id, data, onRequestNewNode }: INodeProps) {
   return (
     <NodeContainer id={id}>
-      <div className="text-lg font-bold p-2">{data.label}</div>
-      <div className="text-xs p-2">{data.description}</div>
+      {data && <div className="text-lg font-bold p-2">{data.label}</div>}
+      {data && <div className="text-xs p-2">{data.description}</div>}
 
       <Button
         type="button"
         size="sm"
-        onClick={() => onRequestNewNode(id, "start-node-out")}
+        onClick={() => onRequestNewNode && onRequestNewNode(id, "start-node-out")}
         className="mt-2 rounded-none rounded-b-xs"
       >
         + Adicionar node

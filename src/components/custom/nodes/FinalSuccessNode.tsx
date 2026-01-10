@@ -1,10 +1,7 @@
+import { INodeProps } from "@/types/nodes";
 import { Handle, Position } from "@xyflow/react";
 
-interface FinalSuccessNodeProps {
-  id: string;
-}
-
-export default function FinalSuccessNode({ id }: FinalSuccessNodeProps) {
+export default function FinalSuccessNode({ id }: INodeProps) {
   return (
     <div className="p-2 border-2 border-green-600 rounded bg-green-100">
       Final Success Node

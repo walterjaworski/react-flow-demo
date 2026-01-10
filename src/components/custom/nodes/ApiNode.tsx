@@ -1,3 +1,4 @@
+import { INodeProps } from "@/types/nodes";
 import { Handle, Position } from "@xyflow/react";
 import { BanIcon, CheckCircle2Icon, CircleAlertIcon, CircleArrowRightIcon, CirclePlusIcon } from "lucide-react";
 import type { JSX } from "react";
@@ -5,23 +6,13 @@ import { Button } from "../../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 import NodeContainer from "./NodeContainer";
 
-interface ApiNodeProps {
-  id: string;
-  data: {
-    label: string;
-    description: string;
-    bgClass: string;
-  };
-  onRequestNewNode: (sourceId: string, handleId: string) => void;
-}
-
 const initialOutputs = [
   { case: "success", label: "Sucesso" },
   { case: "deny", label: "Negação" },
   { case: "fail", label: "Falha" },
 ];
 
-export default function ApiNode({ id, onRequestNewNode }: ApiNodeProps) {
+export default function ApiNode({ id, onRequestNewNode }: INodeProps) {
   const icons: Record<string, JSX.Element> = {
     success: <CheckCircle2Icon size={14} className="text-green-500" />,
     deny: <BanIcon size={14} className="text-yellow-500" />,
@@ -65,7 +56,7 @@ export default function ApiNode({ id, onRequestNewNode }: ApiNodeProps) {
                   variant="ghost"
                   className="absolute top-[50%] right-[-12%] translate-y-[-50%]"
                   onClick={() =>
-                    onRequestNewNode(id, `${id}-out-${output.case}`)
+                    onRequestNewNode && onRequestNewNode(id, `${id}-out-${output.case}`)
                   }
                 >
                   <CirclePlusIcon className="bg-white" />

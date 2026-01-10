@@ -1,10 +1,7 @@
+import { INodeProps } from "@/types/nodes";
 import { Handle, Position } from "@xyflow/react";
 
-interface FinalFailedNodeProps {
-  id: string;
-}
-
-export default function FinalFailedNode({ id }: FinalFailedNodeProps) {
+export default function FinalFailedNode({ id }: INodeProps) {
   return (
     <div className="p-2 border-2 border-red-600 rounded bg-red-100">
       Final Failed Node
