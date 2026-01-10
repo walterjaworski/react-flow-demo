@@ -33,6 +33,36 @@ export default function Header() {
         <CustomNavLink to="/about">
           About
         </CustomNavLink>
+
+
+        <div className="flex-1" />
+      </nav>
+      <nav className="flex gap-2 ml-auto">
+        <a
+          href="https://www.linkedin.com/in/walterjaworski"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
+            bg-sky-600 transition-colors text-white
+            hover:bg-sky-700
+          "
+        >
+          LinkedIn
+        </a>
+
+        <a
+          href="https://github.com/walterjaworski"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
+            bg-slate-800 text-white transition-colors
+            hover:bg-slate-600
+          "
+        >
+          GitHub
+        </a>
       </nav>
     </header>
   )
