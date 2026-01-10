@@ -1,14 +1,7 @@
-import { InitialNodeDialog } from "@/components/flow/dialogs/InitialNodeDialog";
-import { NewNodeDialog } from "@/components/flow/dialogs/NewNodeDIalog";
-import type { InitialNodeFormValues } from "@/components/flow/forms/InitialNodeForm";
-import { InitialNodeForm } from "@/components/flow/forms/InitialNodeForm";
-import type { NewNodeFormValues } from "@/components/flow/forms/NewNodeForm";
-import { NewNodeForm } from "@/components/flow/forms/NewNodeForm";
+import { InitialNodeDialog, NewNodeDialog } from "@/components/flow/dialogs";
+import { InitialNodeForm, InitialNodeFormValues, NewNodeForm, NewNodeFormValues } from "@/components/flow/forms";
 import { applyTreeLayout } from "@/components/flow/layout/applyTreeLayout";
-import ApiNode from "@/components/flow/nodes/ApiNode";
-import FinalFailedNode from "@/components/flow/nodes/FinalFailedNode";
-import FinalSuccessNode from "@/components/flow/nodes/FinalSuccessNode";
-import InitialNode from "@/components/flow/nodes/InitialNode";
+import { ApiNode, FinalFailedNode, FinalSuccessNode, InitialNode } from "@/components/flow/nodes";
 import { createEdge } from "@/components/flow/utils/edges";
 import { Background, BackgroundVariant, Controls, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
